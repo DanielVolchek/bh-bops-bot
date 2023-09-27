@@ -1,7 +1,11 @@
 import express from 'express';
+import bodyParser from 'body-parser';
+import { router } from './spotify';
 import SlackRequest from './slack';
 
 const app = express();
+app.use(bodyParser.json());
+app.use(router);
 
 const port = 5000;
 

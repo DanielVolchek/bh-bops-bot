@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
+import SpotifyRequest from './spotify';
 
 type SlackBody = {
   text: string
 }
 
-type Song = {title: string, artist: string}
+export type Song = {title: string, artist: string}
 
-export default function SlackHandler (req: Request, res: Response){
+export default async function SlackHandler (req: Request, res: Response){
   const body = req.body as SlackBody
 
   if (!body.text) {
@@ -20,7 +21,7 @@ export default function SlackHandler (req: Request, res: Response){
     return res.status(400).json({error: "Bad Formatting"})
   }
 
-
+  await SpotifyRequest(res, song)
 };
 
 const parseSong = (text: string) : Song => {
