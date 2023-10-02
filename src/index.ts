@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(router);
 
-const port = 5000;
+const port = 3000;
 
 app.get('/', (req, res) => {
   res.send('Hello, Bun!');

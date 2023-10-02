@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { spotifySlackRequest } from './spotify';
+import { format } from 'node:path';
 
 type SlackBody = {
   text: string
@@ -43,14 +44,11 @@ export async function slackPlaylistRequest (req: Request, res: Response) {
   res.status(200).send(`https://open.spotify.com/playlist/${ID}`)
 }
 
-
 export async function slackHelpRequest (req: Request, res: Response) {
-  console.log('hit help request')
-  console.log('body is ', req.body)
 
   const GITHUB_LINK = "https://github.com/danielvolchek/bh-bops-bot"
 
-  const HELP_TEXT = "/bops-add:\n>*Description*: This command allows you to add a song to the group playlist.\n>*Usage*: /bops-add <song name> - <artist name>\n>*Example*: /bops-add White Ferrari - Frank Ocean\n\n/bops-help:\n>*Description*: Provides usage instructions for all Bops commands.\n>*Usage*: Simply type /bops-help to get information about how to use each command. No additional arguments are needed.\n\n/bops-jam:\n>*Description*: Get link to group Spotify Jam, where everyone can listen together.\n>*Usage*: /bops-jam\n\n/bops-playlist:\n>*Description*: This command gives you a direct link to the group playlist.\n>*Usage*: /bops-playlist\n\nIf you have any other questions, feel free to ask! If you would like to check out how this is implemented or contribute, check out the code here: " + GITHUB_LINK
+  const HELP_TEXT = "/bops-add:\n>*Description*: This command allows you to add a song to the group playlist.\n>*Usage*: /bops-add \"<song name> - <artist name>\"\n>*Example*: /bops-add \"White Ferrari - Frank Ocean\"\n\n/bops-help:\n>*Description*: Provides usage instructions for all Bops commands.\n>*Usage*: Simply type /bops-help to get information about how to use each command. No additional arguments are needed.\n\n/bops-jam:\n>*Description*: Get link to group Spotify Jam, where everyone can listen together.\n>*Usage*: /bops-jam\n\n/bops-playlist:\n>*Description*: This command gives you a direct link to the group playlist.\n>*Usage*: /bops-playlist\n\nIf you have any other questions, feel free to ask! If you would like to check out how this is implemented or contribute, check out the code here: " + GITHUB_LINK
 
   res.status(200).send(HELP_TEXT)
   
@@ -58,11 +56,17 @@ export async function slackHelpRequest (req: Request, res: Response) {
 
 const parseSong = (text: string) : Song => {
 
-  const parts = text.split(' - ').map(p => p.trim())
+  const formattingError = 'Error: Bad Formatting, please ensure you are formatting as "Song - Artist"'
+
+  if (text.charAt(0) !== '"' || text.charAt(text.length-1)!== '"') {
+    return {title: '', artist: '', error: formattingError}
+  }
+
+  const parts = text.substring(1, text.length-1).split(' - ').map(p => p.trim())
   
   if (parts.length == 2) {
     return {title: parts[0], artist: parts[1]}
   }
 
-  return {title: '', artist: '', error: 'Error: Bad Formatting, please ensure you are formatting as "Song - Artist" without quotes'}
+  return {title: '', artist: '', error: formattingError}
 }

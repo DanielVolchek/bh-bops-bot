@@ -58,7 +58,6 @@ export async function spotifySlackRequest(req: Request, res: Response, song: Son
   }
 
   await addSongToPlaylist(foundUri.uri, key)
-  console.log(req.body)
   return { text: `<@${req.body.user_id}>: <${foundUri.url}|${song.title} - ${song.artist}>`, response_type: "in_channel", replace_original:true }
 }
 
@@ -101,8 +100,6 @@ const addSongToPlaylist = async (songUri: string, key: string) => {
   if (data.error) {
     throw new Error(data.error);
   }
-
-  console.log(data)
 }
 
 const getSpotifyAuthToken = async (code: string) => {
