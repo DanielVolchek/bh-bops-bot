@@ -1,7 +1,5 @@
 import Express, { Request, Response } from "express";
 
-import { Song } from "./slack";
-
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const REFRESH_TOKEN = process.env.SPOTIFY_REFRESH_TOKEN;
@@ -13,6 +11,8 @@ const REDIRECT_URI = 'http://localhost:5000/spotify_redirect';
 export const router = Express.Router()
 
 import querystring from 'node:querystring';
+import { SpotifySearchResult } from "./helpers";
+import { argv0 } from "node:process";
 
 const redirectHandler = async (req: Request, res: Response) => {
   if (!req.query || !req.query.code || !req.query.state) { 
@@ -45,27 +45,26 @@ const loginHandler = (req: Request, res: Response) => {
 
 router.get("/spotify_login", loginHandler)
 
-export async function spotifySlackRequest(req: Request, res: Response, song: Song) {
+export async function spotifySearchRequest(query: string) {
   if (!REFRESH_TOKEN) {
     throw new Error("Expected Refresh Token in Process.Env")
   }
   
   const key = await getSpotifyRefreshedToken(REFRESH_TOKEN as string)
 
-  const foundUri = await searchSong(key, song)
-  if (!foundUri) {
-    return { text: 'Song not found' }
-  }
+  const songs = await searchSong(key, query)
+  return songs;
 
-  await addSongToPlaylist(foundUri.uri, key)
-  return { text: `<@${req.body.user_id}>: <${foundUri.url}|${song.title} - ${song.artist}>`, response_type: "in_channel", replace_original:true }
+  // return blocks with song options
+  // await addSongToPlaylist(foundUri.uri, key)
+  // return { text: `<@${req.body.user_id}>: <${foundUri.url}|${song.title} - ${song.artist}>`, response_type: "in_channel", replace_original:true }
 }
 
-const searchSong = async (key: string, song: Song) => {
+const searchSong = async (key: string, query: string) => {
   const params = querystring.stringify({
-    q: `track:${song.title} artist:${song.artist}`,
+    q: query,
     type: ['track'],
-    limit: 1,
+    limit: 3,
   })
 
   const res = await fetch('https://api.spotify.com/v1/search?'+params, {
@@ -74,12 +73,9 @@ const searchSong = async (key: string, song: Song) => {
     }
   })
 
-  const data = await res.json();
+  const data = await res.json() as SpotifySearchResult;
 
-  if (data && data.tracks && data.tracks.items && data.tracks.items[0]) {
-    return {url: data.tracks.items[0].external_urls.spotify, uri: data.tracks.items[0].uri}
-  }
-
+  return data;
 }
 
 const addSongToPlaylist = async (songUri: string, key: string) => {
