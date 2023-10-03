@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
 import { SlackAPIRequest } from './helpers';
-import { SlowBuffer } from 'buffer';
-import { parse } from 'path';
-import { spotifySearchRequest } from '../spotify';
+import { addSongToPlaylist, getSongByID, spotifySearchRequest } from '../spotify';
 import { HELP_BLOCKS, generateSongsBlock } from './blocks';
+import { isArray } from 'util';
 
 export type Song = {
   title: string;
@@ -27,13 +26,13 @@ export async function slackBopRequest (req: Request, res: Response){
   switch(tokens[0]) {
     case 'add':
       const remainingTokens = tokens.slice(1).join(' ');
+      if (!remainingTokens) {
+        return res.send('Please input a search query')
+      }
       responseObject = await slackAddRequest(body.trigger_id, remainingTokens)
-      break;
+      return res.send()
     case 'playlist':
       responseObject = await slackPlaylistRequest()
-      break;
-    case 'jam':
-      responseObject = await slackJamRequest()
       break;
     default:
     case 'help':
@@ -47,6 +46,7 @@ export async function slackBopRequest (req: Request, res: Response){
 async function slackAddRequest (trigger_id: string, query: string){
 
   // search for song
+
   const songs = await spotifySearchRequest(query)
 
   const songBlocks = generateSongsBlock(songs)
@@ -75,7 +75,7 @@ async function slackAddRequest (trigger_id: string, query: string){
     body: JSON.stringify(response)
   }).then((res) => res.json()).then(data => console.log(data))
 
-  return {};
+  return '';
 };
 
 // async function slackJamRequest () {
@@ -93,7 +93,7 @@ async function slackPlaylistRequest () {
   const ID=process.env.SPOTIFY_PLAYLIST_ID
 
   return {
-    text: 'Playlist is' + 'playlist'
+    'text': `<https://open.spotify.com/playlist/${process.env.SPOTIFY_PLAYLIST_ID}|Playlist Link>`
   };
 
 }
@@ -107,76 +107,74 @@ async function slackHelpRequest () {
 
 export async function slackInteractionRequest (req: Request, res: Response) {
   
-  const channelID = process.env.SLACK_CHANNEL_ID
-
-  const response = {
-  "channel": channelID,
-  "text": "Hello world :tada:"
-  }
-
-  console.log(req.body)
-
   const payload = JSON.parse(req.body.payload)
-  console.log(payload)
 
   res.send()
-
-  // const resp = await fetch('https://slack.com/api/chat.postMessage', {
-  //   method: 'POST',
-  //   headers: {
-  //     'Content-Type': 'application/json',
-  //     'Authorization': 'Bearer ' + SLACK_ACCESS_TOKEN
-  //   },
-  //   body: JSON.stringify(response)
-  // })
-
 
   if (!payload.actions || !Array.isArray(payload.actions) || !payload.actions[0]) {
     setToClosedModal(payload.view.id)
   }
 
-  const link = payload.actions[0].value as string
+  let {value, type} = payload.actions[0]
+
   const spotify_regex = /https?:\/\/open\.spotify\.com\/track\/[\w]+/
 
-  if (!link.match(spotify_regex)) {
-    setToClosedModal(payload.view.id, "Bad input, try again")
-    return
+  
+
+  if (type === "plain_text_input") {
+    if (!value.match(spotify_regex)) {
+      setToClosedModal(payload.view.id, "Bad input, try again")
+      return
+    }
+
+    // get url from spotify
+    const id = value.split('/').at(-1)
+
+    const song = await getSongByID(id);
+
+    if (song.uri) {
+      value = song.uri
+    }
+    else {
+      setToClosedModal(payload.view.id, "Bad input, try again")
+      return
+    }
   }
 
   setToClosedModal(payload.view.id)
+  addSongToPlaylist(value)
 }
 
 const setToClosedModal = (modalID: string, text = "Done") => {
 
+  const request = {
+      "view_id": modalID,
+      "view": {
+          "type": "modal",
+          "title": {
+              "type": "plain_text",
+              "text": "Close Modal"
+          },
+          "blocks": [
+              {
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": text
+                  },
+              }
+          ]
+      }
+  }
 
-const request = {
-    "view_id": modalID,
-    "view": {
-        "type": "modal",
-        "title": {
-            "type": "plain_text",
-            "text": "Close Modal"
-        },
-        "blocks": [
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": text
-                },
-            }
-        ]
-    }
-}
+  const SLACK_ACCESS_TOKEN = process.env.SLACK_ACCESS_TOKEN
 
-const SLACK_ACCESS_TOKEN = process.env.SLACK_ACCESS_TOKEN
-
-fetch('https://slack.com/api/views.update', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SLACK_ACCESS_TOKEN}`,
-    },
-    body: JSON.stringify(request)
-  })
+  fetch('https://slack.com/api/views.update', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SLACK_ACCESS_TOKEN}`,
+      },
+      body: JSON.stringify(request)
+    })
 }

@@ -94,7 +94,7 @@ const generateSongBlock = (track: Track ) => {
 						"emoji": true
 					},
           "style": "primary",
-					"value": `${track.external_urls.spotify}`,
+					"value": `${track.uri}`,
 					"action_id": "actionId-0"
 				}
 			]

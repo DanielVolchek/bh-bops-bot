@@ -11,7 +11,7 @@ const REDIRECT_URI = 'http://localhost:5000/spotify_redirect';
 export const router = Express.Router()
 
 import querystring from 'node:querystring';
-import { SpotifySearchResult } from "./helpers";
+import { SpotifySearchResult, Track } from "./helpers";
 import { argv0 } from "node:process";
 
 const redirectHandler = async (req: Request, res: Response) => {
@@ -45,14 +45,20 @@ const loginHandler = (req: Request, res: Response) => {
 
 router.get("/spotify_login", loginHandler)
 
-export async function spotifySearchRequest(query: string) {
+
+const getRefreshToken = async () => {
+
   if (!REFRESH_TOKEN) {
     throw new Error("Expected Refresh Token in Process.Env")
   }
   
   const key = await getSpotifyRefreshedToken(REFRESH_TOKEN as string)
+  return key;
+}
 
-  const songs = await searchSong(key, query)
+export async function spotifySearchRequest(query: string) {
+
+  const songs = await searchSong(query)
   return songs;
 
   // return blocks with song options
@@ -60,7 +66,24 @@ export async function spotifySearchRequest(query: string) {
   // return { text: `<@${req.body.user_id}>: <${foundUri.url}|${song.title} - ${song.artist}>`, response_type: "in_channel", replace_original:true }
 }
 
-const searchSong = async (key: string, query: string) => {
+
+export const getSongByID = async (id: string) => {
+
+  const key = await getRefreshToken()
+  const res = await fetch(`https://api.spotify.com/v1/tracks/${id}`, {
+    headers: {
+      "Authorization": `Bearer ${key}`
+    }
+  })
+  const data = await res.json() as Track
+  console.log('data is ', data)
+  return data;
+}
+
+const searchSong = async (query: string) => {
+
+  const key = await getRefreshToken()
+
   const params = querystring.stringify({
     q: query,
     type: ['track'],
@@ -78,7 +101,9 @@ const searchSong = async (key: string, query: string) => {
   return data;
 }
 
-const addSongToPlaylist = async (songUri: string, key: string) => {
+export const addSongToPlaylist = async (songUri: string) => {
+  const key = await getRefreshToken()
+
   const url = `https://api.spotify.com/v1/playlists/${SPOTIFY_PLAYLIST_ID}/tracks`
 
   const res = await fetch(url, {
@@ -94,6 +119,7 @@ const addSongToPlaylist = async (songUri: string, key: string) => {
 
   const data = await res.json()
   if (data.error) {
+    console.log('error', data.error)
     throw new Error(data.error);
   }
 }
