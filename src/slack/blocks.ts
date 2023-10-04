@@ -75,8 +75,7 @@ const generateSongBlock = (track: Track ) => {
 			"block_id": Math.floor(Math.random() * 10001).toString(),
 			"text": {
 				"type": "mrkdwn",
-				"text": `*${track.name}*\n*${track.artists.map(a => a.name).join(', ')}*\n
-        ${track.preview_url ? `<${track.preview_url}|Listen to a preview>` : 'No Preview Found'}`
+				"text": `*${track.name}*\n*${track.artists.map(a => a.name).join(', ')}*\n${track.preview_url ? `<${track.preview_url}|Listen to a preview>` : 'No Preview Found'}`
 			},
 			"accessory": {
 				"type": "image",
