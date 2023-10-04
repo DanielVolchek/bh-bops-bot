@@ -7,7 +7,7 @@ export const HELP_BLOCKS = [
         "type": "section",
         "text": {
             "type": "mrkdwn",
-            "text": "*Command*: /bops add\n>*Description*: This command allows you to add a song to the group playlist.\n>*Usage*: /bops add \"song name - artist name\"\n>*Example*: /bops add \"White Ferrari - Frank Ocean\""
+            "text": "*Command*: /bops add\n>*Description*: This command allows you to add a song to the group playlist.\n>*Usage*: /bops add \"Query\"\n>*Example*: /bops add White Ferrari"
         }
     },
     {
@@ -119,7 +119,7 @@ const INPUT_BLOCK = [
 			"block_id": "sectionBlockOnlyMrkdwn",
 			"text": {
 				"type": "mrkdwn",
-				"text": `Enter the link directly... Go <${process.env.APP_URL}/find_track}|here> if you don't know how`
+				"text": `Enter the link directly... Go <${process.env.APP_URL}/find_track|here> if you don't know how`
 			}
 		},
 		{
