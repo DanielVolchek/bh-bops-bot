@@ -75,7 +75,8 @@ const generateSongBlock = (track: Track ) => {
 			"block_id": Math.floor(Math.random() * 10001).toString(),
 			"text": {
 				"type": "mrkdwn",
-				"text": `*${track.name}*\n*${track.artists.map(a => a.name).join(', ')}*\n<${track.preview_url}|Listen to a preview>`
+				"text": `*${track.name}*\n*${track.artists.map(a => a.name).join(', ')}*\n
+        ${track.preview_url ? `<${track.preview_url}|Listen to a preview>` : 'No Preview Found'}`
 			},
 			"accessory": {
 				"type": "image",
@@ -94,7 +95,7 @@ const generateSongBlock = (track: Track ) => {
 						"emoji": true
 					},
           "style": "primary",
-					"value": `${track.uri}`,
+					"value": `${track.id};${track.uri}`,
 					"action_id": "actionId-0"
 				}
 			]

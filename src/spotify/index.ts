@@ -13,6 +13,7 @@ export const router = Express.Router()
 import querystring from 'node:querystring';
 import { SpotifySearchResult, Track } from "./helpers";
 import { argv0 } from "node:process";
+import { sendSlackMessage } from "../slack";
 
 const redirectHandler = async (req: Request, res: Response) => {
   if (!req.query || !req.query.code || !req.query.state) { 
@@ -63,7 +64,6 @@ export async function spotifySearchRequest(query: string) {
 
   // return blocks with song options
   // await addSongToPlaylist(foundUri.uri, key)
-  // return { text: `<@${req.body.user_id}>: <${foundUri.url}|${song.title} - ${song.artist}>`, response_type: "in_channel", replace_original:true }
 }
 
 
@@ -76,7 +76,6 @@ export const getSongByID = async (id: string) => {
     }
   })
   const data = await res.json() as Track
-  console.log('data is ', data)
   return data;
 }
 
@@ -101,7 +100,7 @@ const searchSong = async (query: string) => {
   return data;
 }
 
-export const addSongToPlaylist = async (songUri: string) => {
+export const addSongToPlaylist = async (userID: string, songID: string, songUri: string) => {
   const key = await getRefreshToken()
 
   const url = `https://api.spotify.com/v1/playlists/${SPOTIFY_PLAYLIST_ID}/tracks`
@@ -118,10 +117,16 @@ export const addSongToPlaylist = async (songUri: string) => {
   })
 
   const data = await res.json()
+
   if (data.error) {
     console.log('error', data.error)
     throw new Error(data.error);
   }
+
+  const track = await getSongByID(songID);
+  const artists = track.artists.map(artist => artist.name).join(', ');
+
+  await sendSlackMessage({ text: `<@${userID}>: <${track.external_urls.spotify}|${track.name} - ${artists}>`})
 }
 
 const getSpotifyAuthToken = async (code: string) => {

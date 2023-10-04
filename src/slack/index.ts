@@ -58,7 +58,7 @@ async function slackAddRequest (trigger_id: string, query: string){
     "callback_id": "modal-identifier",
     "title": {
       "type": "plain_text",
-      "text": "Just a modal"
+      "text": "Add Song"
       },
     "blocks": songBlocks
     }
@@ -87,6 +87,35 @@ async function slackAddRequest (trigger_id: string, query: string){
 //   return {text: RULES}
 //
 // }
+
+
+export async function sendSlackMessage (content: Object) {
+
+  const ACCESS_TOKEN = process.env.SLACK_ACCESS_TOKEN
+  const CHANNEL_ID = process.env.SLACK_CHANNEL_ID
+
+  const request = {
+    channel: CHANNEL_ID,
+    ...content
+  }
+
+
+  // desktop: https://drive.google.com/file/d/1BtkEBupbwu3PZGW1ZaqPon4tVvxrE9D7/view?usp=sharing
+  // mobile: https://drive.google.com/file/d/1n7zZgc9rXlYEVj0o1dk3hPYG3M1vh2k0/view?usp=sharing
+
+  const res = await fetch('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${ACCESS_TOKEN}`
+    },
+    body: JSON.stringify(request)
+  })
+
+  const data = await res.json()
+
+  console.log('data', data)
+}
 
 async function slackPlaylistRequest () {
 
@@ -119,7 +148,8 @@ export async function slackInteractionRequest (req: Request, res: Response) {
 
   const spotify_regex = /https?:\/\/open\.spotify\.com\/track\/[\w]+/
 
-  
+  let id = ''
+  let uri = '';
 
   if (type === "plain_text_input") {
     if (!value.match(spotify_regex)) {
@@ -128,21 +158,26 @@ export async function slackInteractionRequest (req: Request, res: Response) {
     }
 
     // get url from spotify
-    const id = value.split('/').at(-1)
+    id = value.split('/').at(-1)
 
     const song = await getSongByID(id);
 
     if (song.uri) {
-      value = song.uri
+      uri = song.uri
     }
     else {
       setToClosedModal(payload.view.id, "Bad input, try again")
       return
     }
+  } else {
+    [id, uri] = value.split(';');
   }
 
+
+  console.log(payload)
+
   setToClosedModal(payload.view.id)
-  addSongToPlaylist(value)
+  addSongToPlaylist(payload.user.id, id, uri)
 }
 
 const setToClosedModal = (modalID: string, text = "Done") => {
