@@ -19,7 +19,7 @@ app.get('/find_track', (req, res) => {
   res.sendFile(path.join(`${__dirname}/find_track.html`));
 });
 
-app.post('/bop', slackBopRequest);
+app.post('/bops', slackBopRequest);
 
 app.post('/interaction', slackInteractionRequest);
 
