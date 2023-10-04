@@ -120,7 +120,6 @@ export const addSongToPlaylist = async (userID: string, songID: string, songUri:
 
   if (data.error) {
     console.log('error', data.error)
-    throw new Error(data.error);
   }
 
   const track = await getSongByID(songID);

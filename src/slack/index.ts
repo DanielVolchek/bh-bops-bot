@@ -73,7 +73,7 @@ async function slackAddRequest (trigger_id: string, query: string){
       'Authorization': 'Bearer ' + SLACK_ACCESS_TOKEN
     },
     body: JSON.stringify(response)
-  }).then((res) => res.json()).then(data => console.log(data))
+  })
 
   return '';
 };
@@ -99,11 +99,7 @@ export async function sendSlackMessage (content: Object) {
     ...content
   }
 
-
-  // desktop: https://drive.google.com/file/d/1BtkEBupbwu3PZGW1ZaqPon4tVvxrE9D7/view?usp=sharing
-  // mobile: https://drive.google.com/file/d/1n7zZgc9rXlYEVj0o1dk3hPYG3M1vh2k0/view?usp=sharing
-
-  const res = await fetch('https://slack.com/api/chat.postMessage', {
+  await fetch('https://slack.com/api/chat.postMessage', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -111,10 +107,6 @@ export async function sendSlackMessage (content: Object) {
     },
     body: JSON.stringify(request)
   })
-
-  const data = await res.json()
-
-  console.log('data', data)
 }
 
 async function slackPlaylistRequest () {
@@ -172,9 +164,6 @@ export async function slackInteractionRequest (req: Request, res: Response) {
   } else {
     [id, uri] = value.split(';');
   }
-
-
-  console.log(payload)
 
   setToClosedModal(payload.view.id)
   addSongToPlaylist(payload.user.id, id, uri)
